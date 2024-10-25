@@ -10,5 +10,9 @@ print(list_files)
 
 if 'promedio_viento.xlsx' in list_files:
     print('File exists')
-    average_wind = pd.read_excel('promedio_viento.xlsx')
-    print(average_wind)
+    file_path = os.path.join(current_dir, 'promedio_viento.xlsx')
+    average_wind = pd.read_excel(file_path)
+
+
+print(average_wind)
+
