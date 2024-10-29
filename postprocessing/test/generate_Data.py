@@ -5,8 +5,6 @@ import math
 
 
 random.seed(42)
-
-
 def generate_data(start_date, num_rows):
     data = []
     current_time = datetime.strptime(start_date, "%d/%m/%Y %H:%M:%S")
@@ -18,8 +16,12 @@ def generate_data(start_date, num_rows):
 
             # Wind speed in m/s
             velocidad = random.uniform(0, 5)
+            # round to 2 decimal
+            velocidad = round(velocidad, 2)
             # Wind direction in degrees
             direccion = random.uniform(0, 360)
+            # round to 2 decimal
+            direccion = round(direccion, 2)
 
             data.append(
                 [timestamp.strftime("%Y-%m-%d %H:%M:%S.%f"), velocidad, direccion]
@@ -28,6 +30,15 @@ def generate_data(start_date, num_rows):
         current_time += timedelta(seconds=1)
 
     return data
+
+
+
+def convert_date_index(df: pd.DataFrame):
+    df["Fecha_Hora"] = pd.to_datetime(df["Fecha_Hora"], format="%Y-%m-%d %H:%M:%S.%f")
+    df.set_index("Fecha_Hora", inplace=True)
+    return df
+
+
 
 
 def processing_average(df: pd.DataFrame):
@@ -42,30 +53,36 @@ def processing_average(df: pd.DataFrame):
     df["Comp E-O"] = df["Velocity (m/s)"] * df["Direction (grados)"].apply(
         lambda x: math.sin(x * math.pi / 180)
     )
+    
+    print(df)
+    print(f"The df start date is: {df.index[0]}")
+    print(f"The df end date is: {df.index[-1]}")
+    print(f"The df is {df.index[-1] - df.index[0]} long")
+    
 
-    # average Comp N-S of 10 minutes
-    # =AVERAGE(C2:C6)
-    df["Avg Comp N-S"] = (
-        df["Comp N-S"].rolling(window=3).mean()
-    )  # window=x --> x rows per second
+    # 10-minute intervals for Comp N-S and Comp E-O
+    # resample_df = df[['Comp N-S', 'Comp E-O']].resample("10min").mean()
+    # resample_df = resample_df.round(2)
 
-    # average Comp E-O of 10 minutes
-    # =AVERAGE(D2:D6)
-    df["Avg Comp E-O"] = df["Comp E-O"].rolling(window=3).mean()
+    # average wind speed
+    # =SQRT(E7^2 + F7^2)
+    df["Avg Wind Speed"] = (
+        df["Comp N-S"] ** 2 + df["Comp E-O"] ** 2
+    ) ** 0.5 # remember that ** 0.5 is the same as square root
 
-    # Average wind speed
-    # =SQRT(E7^2+F7^2)
-    df["Avg Wind Speed"] = df["Avg Comp N-S"] ** 2 + df["Avg Comp E-O"] ** 2
-
-    # Average wind direction
-    # =ATAN2(E7;F7)*180/PI()
-    df["Avg Wind Direction"] = df["Avg Comp N-S"] / df["Avg Comp E-O"] * 180 / math.pi
+    # average wind direction
+    # =ATAN2(E7, F7) * 180 / PI()
+    df["Avg Wind Direction"] = df.apply(
+        lambda x: math.atan2(x["Comp N-S"], x["Comp E-O"]) * 180 / math.pi, axis=1
+    )
 
     print(df)
 
 
+
+
 def main():
-    num_rows = 100
+    num_rows = 100000
     start_date = "22/10/2024 16:47:00"
     data = generate_data(start_date, num_rows)
 
@@ -75,6 +92,7 @@ def main():
     df["Fecha_Hora"] = pd.to_datetime(df["Fecha_Hora"], format="%Y-%m-%d %H:%M:%S.%f")
 
     # processing average
+    df = convert_date_index(df)
     processing_average(df)
 
 
