@@ -47,30 +47,46 @@ def processing_average(df: pd.DataFrame):
     df["Comp N-S"] = df["Velocity (m/s)"] * df["Direction (grados)"].apply(
         lambda x: math.cos(x * math.pi / 180)
     )
+    # round to 2 decimal
+    df["Comp N-S"] = df["Comp N-S"].round(2)
 
     # Comp E-O
     # =A2*SIN((B2*PI()/180))
     df["Comp E-O"] = df["Velocity (m/s)"] * df["Direction (grados)"].apply(
         lambda x: math.sin(x * math.pi / 180)
     )
+    # round to 2 decimal
+    df["Comp E-O"] = df["Comp E-O"].round(2)
     
-    print(df)
     print(f"The df start date is: {df.index[0]}")
     print(f"The df end date is: {df.index[-1]}")
     print(f"The df is {df.index[-1] - df.index[0]} long")
+
+    # average Comp N-S and Comp E-O
+    df["Avg Comp N-S"] = df["Comp N-S"].mean()
+    df["Avg Comp E-O"] = df["Comp E-O"].mean()
+    df["Avg Comp N-S"] = df["Avg Comp N-S"].round(2)
+    df["Avg Comp E-O"] = df["Avg Comp E-O"].round(2)
+
+
+    print(f"The average Comp N-S is: {df['Avg Comp N-S']}")
+    print(f"The average Comp E-O is: {df['Avg Comp E-O']}")
+
+    print(df)
+
     
 
     # 10-minute intervals for Comp N-S and Comp E-O
-    # resample_df = df[['Comp N-S', 'Comp E-O']].resample("10min").mean()
-    # resample_df = resample_df.round(2)
+    resample_df = df[['Comp N-S', 'Comp E-O']].resample("10min").mean()
+    resample_df = resample_df.round(2)
 
     # average wind speed
     # =SQRT(E7^2 + F7^2)
     df["Avg Wind Speed"] = (
         df["Comp N-S"] ** 2 + df["Comp E-O"] ** 2
-    ) ** 0.5 # remember that ** 0.5 is the same as square root
+    ) ** 0.5 # remember!! ** 0.5 is the same as square root
 
-    # average wind direction
+    # # average wind direction
     # =ATAN2(E7, F7) * 180 / PI()
     df["Avg Wind Direction"] = df.apply(
         lambda x: math.atan2(x["Comp N-S"], x["Comp E-O"]) * 180 / math.pi, axis=1
